@@ -5,26 +5,28 @@
 @inject IJSRuntime JS
 @implements IAsyncDisposable
 
-<div style="height: 100vh;">
-    <div class="container" style="height: 20vh;">
+<div class="main">
+
+    <div class="container new-message">
         <div class="row">
             <div class="col-12">
                 <input @bind="usernameInput" type="text" class="form-control" placeholder="Your name" readonly="@isUserReadonly"/>
             </div>
             <div class="col-12">
-                <textarea @bind="messageInput" rows="4" class="form-control" placeholder="Start typing..."></textarea>
+                <textarea @bind="messageInput" rows="4" class="form-control" placeholder="Message"></textarea>
             </div>
-            <div class="col-12 text-center" style="padding-top: 5px;">
+            <div class="col-12 text-center padding-top-5">
                 <button type="button" @onclick="Send" disabled="@(!IsConnected)" class="btn btn-success">Send</button>
             </div>
         </div>
     </div>
 
+    <br/>
 
-    <div @ref=DivMessagesRef  style="height: 75vh;" class="container overflow-auto shadow-sm p-3 mb-5 bg-white rounded">
+    <div @ref=DivMessagesRef class="messages container overflow-auto">
         @if (!userMessages.Any())
         {
-            <p>No messages yet, start chatting!</p>
+            <p>Start chatting!</p>
         }
 
         @foreach (var userMessage in userMessages)

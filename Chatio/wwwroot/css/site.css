@@ -7,6 +7,22 @@ body {
     margin: 0;
 }
 
+.main {
+    height: 100%;
+}
+
+.new-message {
+    height: 20vh;
+}
+
+.messages {
+    height: 70vh;
+}
+
+.padding-top-5 {
+    padding-top: 5px;
+}
+
 h1:focus {
     outline: none;
 }
