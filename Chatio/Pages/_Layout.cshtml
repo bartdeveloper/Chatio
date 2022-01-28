@@ -12,6 +12,11 @@
     <link href="css/site.css" rel="stylesheet" />
     <link href="Chatio.styles.css" rel="stylesheet" />
     <component type="typeof(HeadOutlet)" render-mode="ServerPrerendered" />
+    <script type="text/javascript">
+        function scrollToEnd(element) {
+            element.scrollTop = element.scrollHeight;
+        }
+    </script>
 </head>
 <body>
     @RenderBody()

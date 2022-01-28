@@ -2,47 +2,54 @@
 @using Microsoft.AspNetCore.SignalR.Client
 @using Models
 @inject NavigationManager NavigationManager
+@inject IJSRuntime JS
 @implements IAsyncDisposable
 
-<div class="container overflow-auto shadow-sm p-3 mb-5 bg-white rounded" style="height: 500px;">
-    @if (!userMessages.Any())
-    {
-        <p>No messages yet, start chatting!</p>
-    }
-
-    @foreach (var userMessage in userMessages)
-    {
-        <div class="row mb-3 d-flex @(userMessage.CurrentUser ? "justify-content-end" : "")">
-            <div class="card shadow @(userMessage.CurrentUser ? "color-green mr-5" : "ml-5")" style="width: 18rem;">
-                <div class="card-header">
-                    @(userMessage.CurrentUser ? "You" : userMessage.Username)
-                </div>
-                <ul class="list-group list-group-flush">
-                    <li class="list-group-item @(userMessage.CurrentUser ? "" : "")">@userMessage.Message</li>
-                </ul>
-                <div class="card-footer">
-                    <span class="small">@userMessage.DateSent.ToString("HH:mm | MMM dd")</span>
-                </div>
+<div style="height: 100vh;">
+    <div class="container" style="height: 20vh;">
+        <div class="row">
+            <div class="col-12">
+                <input @bind="usernameInput" type="text" class="form-control" placeholder="Your name" readonly="@isUserReadonly"/>
+            </div>
+            <div class="col-12">
+                <textarea @bind="messageInput" rows="4" class="form-control" placeholder="Start typing..."></textarea>
+            </div>
+            <div class="col-12 text-center" style="padding-top: 5px;">
+                <button type="button" @onclick="Send" disabled="@(!IsConnected)" class="btn btn-success">Send</button>
             </div>
         </div>
-    }
-</div>
-
-<div class="container">
-    <div class="row">
-        <div class="col-3">
-            <input @bind="usernameInput" type="text" class="form-control" placeholder="Your name" readonly="@isUserReadonly"/>
-        </div>
-        <div class="col-6">
-            <textarea @bind="messageInput" class="form-control" placeholder="Start typing..."></textarea>
-        </div>
-        <div class="col-3">
-            <button type="button" @onclick="Send" disabled="@(!IsConnected)" class="btn btn-primary">Send</button>
-        </div>
     </div>
+
+
+    <div @ref=DivMessagesRef  style="height: 75vh;" class="container overflow-auto shadow-sm p-3 mb-5 bg-white rounded">
+        @if (!userMessages.Any())
+        {
+            <p>No messages yet, start chatting!</p>
+        }
+
+        @foreach (var userMessage in userMessages)
+        {
+            <div class="row mb-3 d-flex @(userMessage.CurrentUser ? "justify-content-end" : "")">
+                <div class="card shadow @(userMessage.CurrentUser ? "color-green mr-5" : "ml-5")" style="width: 18rem;">
+                    <div class="card-header" style="font-weight: bold;">
+                        @(userMessage.CurrentUser ? "You" : userMessage.Username)
+                    </div>
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item" style="font-style: italic;">@userMessage.Message</li>
+                    </ul>
+                    <div class="card-footer">
+                        <span class="small">@userMessage.DateSent.ToString("HH:mm | dd MMM yyyy")</span>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+
 </div>
 
 @code{
+
+    ElementReference DivMessagesRef;
     private HubConnection hubConnection;
     private List<ChatMessage> userMessages = new();
     private string usernameInput;
@@ -62,6 +69,9 @@
             userMessages.Add(new ChatMessage { Username = user, Message = message, CurrentUser = user == usernameInput, DateSent = DateTime.Now });
 
             StateHasChanged();
+
+            JS.InvokeVoidAsync("scrollToEnd", DivMessagesRef);
+            
         });
 
         await hubConnection.StartAsync();
