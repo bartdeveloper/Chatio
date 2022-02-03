@@ -21,8 +21,6 @@
         </div>
     </div>
 
-    <br/>
-
     <div @ref=DivMessagesRef class="messages container overflow-auto">
         @if (!userMessages.Any())
         {
@@ -62,6 +60,7 @@
 
     protected override async Task OnInitializedAsync()
     {
+
         hubConnection = new HubConnectionBuilder()
             .WithUrl(NavigationManager.ToAbsoluteUri("/chathub"))
             .Build();
