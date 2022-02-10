@@ -1,15 +1,10 @@
-﻿@inherits LayoutComponentBase
+﻿@using Blazored.Toast.Configuration
+@inherits LayoutComponentBase
 
 <PageTitle>Chatio</PageTitle>
 
-<div class="page">
-    <div class="sidebar">
-        <NavMenu />
-    </div>
+<BlazoredToasts Position="ToastPosition.TopRight" Timeout="1" ShowProgressBar="true"/>
 
-    <main>
-        <article class="content px-4">
-            @Body
-        </article>
-    </main>
+<div class="main">
+    @Body
 </div>

@@ -1,99 +1,287 @@
 ﻿@page "/"
+@using Chatio.Hubs
 @using Microsoft.AspNetCore.SignalR.Client
 @using Models
 @inject NavigationManager NavigationManager
 @inject IJSRuntime JS
+@inject IToastService toastService
 @implements IAsyncDisposable
 
-<div class="main">
+<div class="main2">
 
-    <div class="container new-message">
-        <div class="row">
-            <div class="col-12">
-                <input @bind="usernameInput" type="text" class="form-control" placeholder="Your name" readonly="@isUserReadonly"/>
-            </div>
-            <div class="col-12">
-                <textarea @bind="messageInput" rows="4" class="form-control" placeholder="Message"></textarea>
-            </div>
-            <div class="col-12 text-center padding-top-5">
-                <button type="button" @onclick="Send" disabled="@(!IsConnected)" class="btn btn-success">Send</button>
-            </div>
-        </div>
-    </div>
+    @if (isUserLogged)
+    {
 
-    <div @ref=DivMessagesRef class="messages container overflow-auto">
-        @if (!userMessages.Any())
-        {
-            <p>Start chatting!</p>
-        }
+        <div class="container first-part">
 
-        @foreach (var userMessage in userMessages)
-        {
-            <div class="row mb-3 d-flex @(userMessage.CurrentUser ? "justify-content-end" : "")">
-                <div class="card shadow @(userMessage.CurrentUser ? "color-green mr-5" : "ml-5")" style="width: 18rem;">
-                    <div class="card-header" style="font-weight: bold;">
-                        @(userMessage.CurrentUser ? "You" : userMessage.Username)
-                    </div>
-                    <ul class="list-group list-group-flush">
-                        <li class="list-group-item" style="font-style: italic;">@userMessage.Message</li>
+            <div class="header row">
+
+                <!-- ROOM NAME -->
+                <div class="col-xxl-8 col-xl-8 col-lg-8 col-md-8 col-sm-8 col-8">
+                    <h1><i>#@roomInput</i></h1>
+                </div>
+
+                <!-- DISCONNECT BUTTON -->
+                <div class="col-xxl-4 col-xl-4 col-lg-4 col-md-4 col-sm-4 col-4 text-align-right">
+                    <button type="button" @onclick="Logout" hidden="@(!isConnected)" class="btn btn-secondary"><span class="oi oi-account-logout"></span> Disconnect</button>
+                </div>
+
+                <!-- USERS -->
+                <div class="col-xxl-2 col-xl-2 col-lg-2 col-md-12 col-sm-12 col-12 users">
+                    <strong>Users <small>(@users.Count)</small></strong>
+                    <ul>
+                        @foreach (var user in users)
+                        {
+                            <li class="user">@user</li>
+                        }
                     </ul>
-                    <div class="card-footer">
-                        <span class="small">@userMessage.DateSent.ToString("HH:mm | dd MMM yyyy")</span>
+                </div>
+
+                <!-- SEND MESSAGE FORM -->
+                <div class="col-xxl-10 col-xl-10 col-lg-10 col-md-12 col-sm-12 col-12">
+                    <div class="row">
+                        <div class="col-lg-10 col-sm-12">
+                            <input type="text" @bind="usernameInput" class="form-control" placeholder="Name" readonly="@isUserLogged"/>
+                        </div>
+                        <div class="col-lg-10 col-sm-12">
+                            <textarea @bind="messageInput" @ref=MessageRef rows="2" class="form-control" @onkeydown="SendMessageByEnter" placeholder="Message"></textarea>
+                        </div>
+                        <div class="col-lg-10 col-sm-12">
+                            <button type="button" @ref=SendBtnRef @onclick="SendMessage" disabled="@(!isConnected)" class="col-12 btn btn-send">Send <span class="oi oi-check" aria-hidden="true"></span></button>
+                        </div>
+                    </div>
+                </div>         
+
+            </div>
+
+        </div>
+
+    }
+
+    <!-- JOIN FORM -->
+    @if (!isUserLogged)
+    {
+
+        <div @ref=DivMessagesRef class="container">
+            <div class="row">
+
+                <div class="container join-form">
+                    <div class="row col-lg-4 col-8 padding-top-20">
+                        <div class="chatio">Chatio 💬</div>
+                        <div class="col-12">
+                            <input @bind="usernameInput" type="text" class="form-control" placeholder="Name" readonly="@isUserLogged"/>
+                        </div>
+                        <div class="col-12">
+                            <input @bind="roomInput" rows="4" class="form-control" @onkeydown="JoinByEnter" placeholder="Room" />
+                        </div>
+                        <div class="col-12 text-center padding-top-5">
+                            <button type="button" @ref=JoinBtnRef @onclick="Join" hidden="@(!isConnected)" class="col-md-12 col-sm-12 col-12 btn btn-warning">Join <span class="oi oi-account-login"></span></button>
+                        </div>
+                        <div class="col-12">
+                            <button type="button" @onclick="Reconnect" hidden="@(!isAfterDisconnect)" class="col-md-12 col-sm-12 col-12 btn btn-success reconnect">Reconnect <span class="oi oi-reload"></span></button>
+                        </div>
                     </div>
                 </div>
+
             </div>
-        }
-    </div>
+        </div>
+
+    }
+
+    <!-- MESSAGES -->
+    @if (isUserLogged)
+    {
+         
+        <div @ref=DivMessagesRef class="container second-part">
+            <div class="row">
+
+                <div class="messages container">
+
+                    @if (!messages.Any())
+                    {
+                        <p>Send your first message!</p>
+                    }
+
+                    @foreach (var userMessage in messages)
+                    {
+                        <div class="message mb-5 d-flex @(userMessage.CurrentUser ? "justify-content-end" : "")">
+                            <div class="col-xxl-5 col-xl-5 col-lg-5 col-md-10 col-sm-10 col-10 card shadow @(userMessage.Username.Equals(ChatHub.BOT_NAME) ? "color-red" : "") @(userMessage.CurrentUser ? "color-green mr-5" : "ml-5")">
+                                <div class="card-header" style="font-weight: bold;">
+                                    @(userMessage.CurrentUser ? "You" : userMessage.Username)
+                                </div>
+                                <ul class="list-group list-group-flush">
+                                    <li class="list-group-item message-content">@userMessage.Message</li>
+                                </ul>
+                                <div class="card-footer">
+                                    <span class="small">@userMessage.DateSent.ToString("HH:mm | dd MMM yyyy")</span>
+                                </div>
+                            </div>
+                        </div>
+                    }
+
+                </div>
+
+            </div>
+        </div>
+
+    }
 
 </div>
 
 @code{
 
     ElementReference DivMessagesRef;
+    ElementReference SendBtnRef;
+    ElementReference MessageRef;
+    ElementReference JoinBtnRef;
     private HubConnection hubConnection;
-    private List<ChatMessage> userMessages = new();
+    private List<ChatMessage> messages = new();
+    private List<string> users = new();
     private string usernameInput;
+    private string roomInput;
     private string messageInput;
-    private bool isUserReadonly = false;
-
-    public bool IsConnected => hubConnection.State == HubConnectionState.Connected;
+    private bool isUserLogged = false;
+    private bool isConnected => hubConnection.State == HubConnectionState.Connected;
+    private bool isAfterDisconnect = false;
 
     protected override async Task OnInitializedAsync()
     {
+        await Login();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        await StopChat();
+    }
+
+    public async Task StopChat()
+    {
+        if (hubConnection is not null)
+        {
+            await hubConnection.StopAsync();
+        }
+    }
+
+    public async Task Login()
+    {   
 
         hubConnection = new HubConnectionBuilder()
             .WithUrl(NavigationManager.ToAbsoluteUri("/chathub"))
             .Build();
 
-        hubConnection.On<string, string>("ReceiveMessage", (user, message) =>
+        hubConnection.On<string, string>(ChatHub.METHOD_RECEIVE_MESSAGE, (user, message) =>
         {
-            userMessages.Add(new ChatMessage { Username = user, Message = message, CurrentUser = user == usernameInput, DateSent = DateTime.Now });
+            messages.Add(new ChatMessage { 
+                Username = user, 
+                Message = message, 
+                CurrentUser = user == usernameInput, 
+                DateSent = DateTime.Now 
+            });
 
             StateHasChanged();
 
             JS.InvokeVoidAsync("scrollToEnd", DivMessagesRef);
-            
+
+            if (user != usernameInput && user != ChatHub.BOT_NAME)
+            {
+                JS.InvokeVoidAsync("setTitleWithoutFocus", "Chatio");
+            }
+
+            MessageRef.FocusAsync();
+
         });
 
-        await hubConnection.StartAsync();
-    }
-
-    private async Task Send()
-    {
-        if (!string.IsNullOrEmpty(usernameInput) && !string.IsNullOrEmpty(messageInput))
+        hubConnection.On<List<string>>(ChatHub.METHOD_ROOM_MESSAGE, (users) =>
         {
-            await hubConnection.SendAsync("SendMessage", usernameInput, messageInput);
+            this.users = users;
 
-            isUserReadonly = true;
-            messageInput = string.Empty;
-        }
+            StateHasChanged();
+
+        });
+
+        isAfterDisconnect = false;
+
+        await hubConnection.StartAsync();  
+
     }
 
-    public async ValueTask DisposeAsync()
+    public async Task Logout()
     {
         if (hubConnection is not null)
         {
-            await hubConnection.DisposeAsync();
+            await hubConnection.SendAsync("Disconnect");
+            messages = new();
+            users = new();
+            isUserLogged = false;
+            isAfterDisconnect = true;
+            await StopChat();
+            toastService.ShowSuccess("Disconnected...");
+        }  
+    }
+
+    public async Task Reconnect()
+    {
+        await Login();
+        await Join();
+    }
+
+    private async Task Join()
+    {
+        await JoinBtnRef.FocusAsync();
+        if (!string.IsNullOrEmpty(usernameInput) && !string.IsNullOrEmpty(roomInput))
+        {
+
+            if(usernameInput.Equals(ChatHub.BOT_NAME, StringComparison.InvariantCultureIgnoreCase))
+            {
+                toastService.ShowError($"Restricted name! ({ChatHub.BOT_NAME})");
+                return;    
+            }
+
+            messages = new();
+
+            await hubConnection.SendAsync("JoinToRoom", new ChatUser() { User = usernameInput, Room = roomInput.ToLowerInvariant() });
+
+            isUserLogged = true;
+            messageInput = string.Empty;
+
+            toastService.ShowSuccess($"Joined to the room: {roomInput}");
+        } else
+        {
+            toastService.ShowError($"Fill your name & room");
         }
     }
+
+    public async Task JoinByEnter(KeyboardEventArgs e)
+    {
+        if (e.Code == "Enter" || e.Code == "NumpadEnter")
+        {        
+            await Join();
+        }
+    }
+
+    private async Task SendMessage()
+    {
+        await SendBtnRef.FocusAsync();
+        messageInput = ClearInput(messageInput);
+        if (!string.IsNullOrEmpty(usernameInput) && !string.IsNullOrEmpty(messageInput))
+        {
+            await hubConnection.SendAsync("SendMessage", messageInput);
+            messageInput = string.Empty;
+        } else
+        {
+            toastService.ShowError($"Type message!");
+        }
+        await MessageRef.FocusAsync();
+    }
+
+    public async Task SendMessageByEnter(KeyboardEventArgs e)
+    {
+        if (e.Code == "Enter" || e.Code == "NumpadEnter")
+        {        
+            await SendMessage();
+        }
+    }
+
+    public string ClearInput(string input) => input.Trim().ReplaceLineEndings();
+
 }

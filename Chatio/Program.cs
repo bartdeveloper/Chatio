@@ -1,18 +1,21 @@
+using Blazored.Toast.Services;
 using Chatio.Hubs;
+using Chatio.Models;
 using Microsoft.AspNetCore.ResponseCompression;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
 builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
 builder.Services.AddResponseCompression(opts => {
     opts.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(new[] { "application/octet-stream" });
 });
 
+builder.Services.AddSingleton<IDictionary<string, ChatUser>>(opts => new Dictionary<string, ChatUser>());
+builder.Services.AddScoped<IToastService, ToastService>();
+
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error");
