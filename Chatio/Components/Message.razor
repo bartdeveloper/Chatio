@@ -1,0 +1,40 @@
+﻿@using Chatio.Hubs
+@using Chatio.Models
+
+@if (chatMessage.Username.Equals(ChatHub.BOT_NAME))
+{
+
+    <div class="message mb-3 d-flex">
+        <div class="row col-xxl-5 col-xl-5 col-lg-10 col-md-10 col-sm-10 col-10 card shadow color-red ml-5">
+            <div class="card-header col-12">
+                <span class="small">@chatMessage.DateSent.ToString("HH:mm")</span> <span class="bold">@chatMessage.Message</span>
+            </div>
+        </div>
+    </div>
+
+}
+else
+{
+
+    <div class="message mb-3 d-flex @(chatMessage.CurrentUser ? "justify-content-end" : "")">
+        <div class="row col-xxl-5 col-xl-5 col-lg-10 col-md-10 col-sm-10 col-10 card shadow @(chatMessage.Username.Equals(ChatHub.BOT_NAME) ? "color-red" : "") @(chatMessage.CurrentUser ? "color-green mr-5" : "ml-5")">
+            <div class="card-header" style="font-weight: bold;">
+                @(chatMessage.CurrentUser ? "You" : chatMessage.Username)
+            </div>
+            <ul class="list-group list-group-flush">
+                <li class="list-group-item message-content">@chatMessage.Message</li>
+            </ul>
+            <div class="card-footer">
+                <span class="small">@chatMessage.DateSent.ToString("HH:mm | dd MMM yyyy")</span>
+            </div>
+        </div>
+    </div>
+
+}
+
+@code {
+
+    [Parameter]
+    public ChatMessage chatMessage { get; init; }
+
+}
