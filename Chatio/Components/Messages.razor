@@ -1,0 +1,20 @@
+﻿@using Chatio.Hubs
+@using Chatio.Models
+
+<div id="messages" class="container second-part">
+    <div class="row">
+        <div class="messages container">
+            @foreach (var userMessage in messages)
+            {
+                <Message chatMessage=userMessage></Message>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+
+    [Parameter]
+    public List<ChatMessage> messages { get; init; }
+
+}

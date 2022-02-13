@@ -17,8 +17,9 @@
         let newMessagesCounter = 0;
         const TITLE = 'Chatio';
 
-        function scrollToEnd(element) {
-            element.scrollTop = element.scrollHeight;
+        function scrollToEndMessages() {
+            var elem = document.getElementById('messages');
+            elem.scrollTop = elem.scrollHeight;
         }  
 
         function setTitleWithoutFocus(title){

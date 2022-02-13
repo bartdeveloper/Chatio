@@ -93,36 +93,17 @@
     @if (isUserLogged)
     {
 
-        <div @ref=DivMessagesRef class="container second-part">
-            <div class="row">
-
-                <div class="messages container">
-
-                    @if (!messages.Any())
-                    {
-                        <p>Send your first message!</p>
-                    }
-
-                    @foreach (var userMessage in messages.ToList())
-                    {
-                        <Message chatMessage=userMessage></Message>
-                    }
-
-                </div>
-
-            </div>
-        </div>
+        <Messages messages=messages></Messages>
 
     }
 
 </div>
 
-@code{
-
-    ElementReference DivMessagesRef;
+@code {
+    
+    ElementReference BtnJoinRef;
     ElementReference BtnSendRef;
     ElementReference TextareaMessageRef;
-    ElementReference BtnJoinRef;
     ElementReference InputRoomRef;
 
     private HubConnection hubConnection;
@@ -131,9 +112,9 @@
     private string usernameInput;
     private string roomInput;
     private string messageInput;
-    private bool isUserLogged = false;
-    private bool isConnected => hubConnection?.State == HubConnectionState.Connected;
     private string connectionId;
+    private bool isUserLogged = false;
+    private bool isConnected => hubConnection?.State == HubConnectionState.Connected;  
     private TimeSpan userOffsetTime;
 
     protected override async Task OnInitializedAsync()
@@ -192,7 +173,7 @@
 
             StateHasChanged();
 
-            JS.InvokeVoidAsync("scrollToEnd", DivMessagesRef);
+            JS.InvokeVoidAsync("scrollToEndMessages");
 
             if (user != usernameInput)
             {
@@ -224,8 +205,6 @@
             //messages = new();
             users = new();
             isUserLogged = false;
-            //isAfterDisconnect = true;
-            //await StopChat();
             toastService.ShowSuccess("Disconnected...");
         }  
     }
