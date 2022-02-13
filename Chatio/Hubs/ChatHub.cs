@@ -27,30 +27,50 @@ namespace Chatio.Hubs
 
         public async Task Disconnect()
         {           
-            if (_connections.TryGetValue(Context.ConnectionId, out ChatUser userConnection))
+            if (_connections.TryGetValue(Context.ConnectionId, out ChatUser chatUser))
             {
                 _connections.Remove(Context.ConnectionId);
-                await Clients.Group(userConnection.Room).SendAsync(METHOD_RECEIVE_MESSAGE, _botUser, $"{userConnection.User} has left");
-                await SendUsersConnectedToRoom(userConnection.Room);
+                await Clients.Group(chatUser.Room).SendAsync(METHOD_RECEIVE_MESSAGE, _botUser, $"{chatUser.User} has left");
+                await SendUsersConnectedToRoom(chatUser.Room);
             }
         }
 
-        public async Task JoinToRoom(ChatUser userConnection)
+        public string GetConnectionId() => Context.ConnectionId;
+
+        public bool IsUsernameTaken(string room, string username)
         {
-            await Groups.AddToGroupAsync(Context.ConnectionId, userConnection.Room);
+            if (_connections.Values.Any(
+                c => c.Room.Equals(room, StringComparison.InvariantCultureIgnoreCase)
+                    && c.User.Equals(username, StringComparison.InvariantCultureIgnoreCase)))
+            {
+                return true;
+            }
 
-            _connections[Context.ConnectionId] = userConnection;
+            return false;
+        }
 
-            await Clients.Group(userConnection.Room).SendAsync(METHOD_RECEIVE_MESSAGE, _botUser, $"{userConnection.User} has joined to the room: {userConnection.Room}");
+        public async Task JoinToRoom(ChatUser chatUser)
+        {
 
-            await SendUsersConnectedToRoom(userConnection.Room);
+            if (!IsUsernameTaken(chatUser.Room, chatUser.User)){
+
+                await Groups.AddToGroupAsync(Context.ConnectionId, chatUser.Room);
+
+                _connections[Context.ConnectionId] = chatUser;
+
+                await Clients.Group(chatUser.Room).SendAsync(METHOD_RECEIVE_MESSAGE, _botUser, $"{chatUser.User} has joined to the room: {chatUser.Room}");
+
+                await SendUsersConnectedToRoom(chatUser.Room);
+
+            }
+
         }
 
         public async Task SendMessage(string message)
         {
-            if (_connections.TryGetValue(Context.ConnectionId, out ChatUser userConnection))
+            if (_connections.TryGetValue(Context.ConnectionId, out ChatUser chatUser))
             {
-                await Clients.Group(userConnection.Room).SendAsync(METHOD_RECEIVE_MESSAGE, userConnection.User, message);
+                await Clients.Group(chatUser.Room).SendAsync(METHOD_RECEIVE_MESSAGE, chatUser.User, message);
             }
         }
 
