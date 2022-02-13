@@ -14,7 +14,7 @@
     <link href="_content/Blazored.Toast/blazored-toast.css" rel="stylesheet" />
     <component type="typeof(HeadOutlet)" render-mode="ServerPrerendered" />
     <script type="text/javascript">
-        let newMessages = 0;
+        let newMessagesCounter = 0;
         const TITLE = 'Chatio';
 
         function scrollToEnd(element) {
@@ -23,7 +23,7 @@
 
         function setTitleWithoutFocus(title){
             if(!document.hasFocus()){
-                setTitle(`(${++newMessages}) ${title}`);
+                setTitle(`(${++newMessagesCounter}) ${title}`);
             }
         }
 
@@ -32,7 +32,7 @@
         }
 
         function resetMessagesCounter(){
-            newMessages = 0;
+            newMessagesCounter = 0;
         }
 
         document.addEventListener('visibilitychange', function(ev) {   
@@ -46,9 +46,14 @@
             setTitle(TITLE);
             resetMessagesCounter();
         });
+
+        function getTimezoneOffset() {
+            return new Date().getTimezoneOffset();
+        }
     </script>
 </head>
 <body>
+
     @RenderBody()
 
     <div id="blazor-error-ui">
@@ -63,5 +68,20 @@
     </div>
 
     <script src="_framework/blazor.server.js"></script>
+
+    <script>
+        new MutationObserver((mutations, observer) => {
+            if (document.querySelector('#components-reconnect-modal h5 a')) {
+                async function attemptReload() {
+                    await fetch('');
+                    location.reload();
+                }
+                observer.disconnect();
+                attemptReload();
+                setInterval(attemptReload, 2000);
+            }
+        }).observe(document.body, { childList: true, subtree: true });
+    </script>
+
 </body>
 </html>

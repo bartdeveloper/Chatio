@@ -5,7 +5,7 @@ body {
     font-family: 'Roboto', 'Open Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
     height: 100%;
     margin: 0;
-    background: linear-gradient(180deg, #41586c, #718392) repeat;
+    background: #41586c;
 }
 
 .first-part {
@@ -14,7 +14,7 @@ body {
 
 .second-part {
     overflow-y: auto;
-    height: calc(100vh - 270px);
+    height: calc(100vh - 300px);
     border-radius: 6px;
 }
 
@@ -53,12 +53,17 @@ body {
 }
 
 .message {
-    font-family: Geneva, Cambria, Cochin, 'Lucida Sans Regular', Geneva, Verdana, sans-serif;
+    
 }
 
 .message-content {
-    font-style: italic;
-    font-size: 1.5rem;
+    font-style: normal;
+    font-size: 1.25rem;
+    font-family: Cambria, 'Times New Roman', Verdana, sans-serif;
+}
+
+.bold {
+    font-weight: bold;
 }
 
 .btn-send {
@@ -85,6 +90,11 @@ body {
 .user {
     color: #444;
     font-size: 1.25rem;
+}
+
+.you {
+    font-weight: bold;
+    text-decoration: underline;
 }
 
 .padding-top-5 {
@@ -137,3 +147,45 @@ body {
     .blazor-error-boundary::after {
         content: "An error has occurred."
     }
+
+.my-reconnect-modal > div {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 1000;
+    overflow: hidden;
+    background-color: #fff;
+    opacity: 0.8;
+    text-align: center;
+    font-weight: bold;
+}
+
+.components-reconnect-hide > div {
+    display: none;
+}
+
+.components-reconnect-show > div {
+    display: none;
+}
+
+.components-reconnect-show > .show {
+    display: block;
+}
+
+.components-reconnect-failed > div {
+    display: none;
+}
+
+.components-reconnect-failed > .failed {
+    display: block;
+}
+
+.components-reconnect-rejected > div {
+    display: none;
+}
+
+.components-reconnect-rejected > .rejected {
+    display: block;
+}
