@@ -1,13 +1,18 @@
 ﻿@page "/"
+@using Blazored.LocalStorage
+@using Chatio.Components
 @using Chatio.Hubs
+@using Chatio.Services
 @using Microsoft.AspNetCore.SignalR.Client
 @using Models
-@inject NavigationManager NavigationManager
+@inject NavigationManager navigationManager
+@inject TimeZoneService timeZoneService
 @inject IJSRuntime JS
 @inject IToastService toastService
+@inject ILocalStorageService localStorage
 @implements IAsyncDisposable
 
-<div class="main2">
+<div>
 
     @if (isUserLogged)
     {
@@ -32,7 +37,7 @@
                     <ul>
                         @foreach (var user in users)
                         {
-                            <li class="user">@user</li>
+                            <li class="user @(user == usernameInput ? "you" : "")">@user</li>
                         }
                     </ul>
                 </div>
@@ -41,13 +46,10 @@
                 <div class="col-xxl-10 col-xl-10 col-lg-10 col-md-12 col-sm-12 col-12">
                     <div class="row">
                         <div class="col-lg-10 col-sm-12">
-                            <input type="text" @bind="usernameInput" class="form-control" placeholder="Name" readonly="@isUserLogged"/>
+                            <textarea @bind="messageInput" @ref=TextareaMessageRef rows="2" class="form-control" @onkeydown="SendMessageByEnter" placeholder="Message"></textarea>
                         </div>
                         <div class="col-lg-10 col-sm-12">
-                            <textarea @bind="messageInput" @ref=MessageRef rows="2" class="form-control" @onkeydown="SendMessageByEnter" placeholder="Message"></textarea>
-                        </div>
-                        <div class="col-lg-10 col-sm-12">
-                            <button type="button" @ref=SendBtnRef @onclick="SendMessage" disabled="@(!isConnected)" class="col-12 btn btn-send">Send <span class="oi oi-check" aria-hidden="true"></span></button>
+                            <button type="button" @ref=BtnSendRef @onclick="SendMessage" disabled="@(!isConnected)" class="col-12 btn btn-send">Send <span class="oi oi-check" aria-hidden="true"></span></button>
                         </div>
                     </div>
                 </div>         
@@ -62,23 +64,20 @@
     @if (!isUserLogged)
     {
 
-        <div @ref=DivMessagesRef class="container">
+        <div class="container">
             <div class="row">
 
                 <div class="container join-form">
                     <div class="row col-lg-4 col-8 padding-top-20">
                         <div class="chatio">Chatio 💬</div>
                         <div class="col-12">
-                            <input @bind="usernameInput" type="text" class="form-control" placeholder="Name" readonly="@isUserLogged"/>
+                            <input @bind="usernameInput" type="text" class="form-control" @onkeydown="FocusRoom" placeholder="Name" readonly="@isUserLogged"/>
                         </div>
                         <div class="col-12">
-                            <input @bind="roomInput" rows="4" class="form-control" @onkeydown="JoinByEnter" placeholder="Room" />
+                            <input @ref=InputRoomRef @bind="roomInput" rows="4" class="form-control" @onkeydown="JoinByEnter" placeholder="Room" />
                         </div>
                         <div class="col-12 text-center padding-top-5">
-                            <button type="button" @ref=JoinBtnRef @onclick="Join" hidden="@(!isConnected)" class="col-md-12 col-sm-12 col-12 btn btn-warning">Join <span class="oi oi-account-login"></span></button>
-                        </div>
-                        <div class="col-12">
-                            <button type="button" @onclick="Reconnect" hidden="@(!isAfterDisconnect)" class="col-md-12 col-sm-12 col-12 btn btn-success reconnect">Reconnect <span class="oi oi-reload"></span></button>
+                            <button type="button" @ref=BtnJoinRef @onclick="Join" hidden="@(!isConnected)" class="col-md-12 col-sm-12 col-12 btn btn-warning">Join <span class="oi oi-account-login"></span></button>
                         </div>
                     </div>
                 </div>
@@ -86,12 +85,14 @@
             </div>
         </div>
 
+        <Footer></Footer>
+
     }
 
     <!-- MESSAGES -->
     @if (isUserLogged)
     {
-         
+
         <div @ref=DivMessagesRef class="container second-part">
             <div class="row">
 
@@ -102,21 +103,9 @@
                         <p>Send your first message!</p>
                     }
 
-                    @foreach (var userMessage in messages)
+                    @foreach (var userMessage in messages.ToList())
                     {
-                        <div class="message mb-5 d-flex @(userMessage.CurrentUser ? "justify-content-end" : "")">
-                            <div class="col-xxl-5 col-xl-5 col-lg-5 col-md-10 col-sm-10 col-10 card shadow @(userMessage.Username.Equals(ChatHub.BOT_NAME) ? "color-red" : "") @(userMessage.CurrentUser ? "color-green mr-5" : "ml-5")">
-                                <div class="card-header" style="font-weight: bold;">
-                                    @(userMessage.CurrentUser ? "You" : userMessage.Username)
-                                </div>
-                                <ul class="list-group list-group-flush">
-                                    <li class="list-group-item message-content">@userMessage.Message</li>
-                                </ul>
-                                <div class="card-footer">
-                                    <span class="small">@userMessage.DateSent.ToString("HH:mm | dd MMM yyyy")</span>
-                                </div>
-                            </div>
-                        </div>
+                        <Message chatMessage=userMessage></Message>
                     }
 
                 </div>
@@ -131,9 +120,11 @@
 @code{
 
     ElementReference DivMessagesRef;
-    ElementReference SendBtnRef;
-    ElementReference MessageRef;
-    ElementReference JoinBtnRef;
+    ElementReference BtnSendRef;
+    ElementReference TextareaMessageRef;
+    ElementReference BtnJoinRef;
+    ElementReference InputRoomRef;
+
     private HubConnection hubConnection;
     private List<ChatMessage> messages = new();
     private List<string> users = new();
@@ -141,12 +132,27 @@
     private string roomInput;
     private string messageInput;
     private bool isUserLogged = false;
-    private bool isConnected => hubConnection.State == HubConnectionState.Connected;
-    private bool isAfterDisconnect = false;
+    private bool isConnected => hubConnection?.State == HubConnectionState.Connected;
+    private string connectionId;
+    private TimeSpan userOffsetTime;
 
     protected override async Task OnInitializedAsync()
     {
         await Login();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {    
+        if(firstRender){   
+            userOffsetTime = await timeZoneService.GetLocalOffset();
+            usernameInput = await localStorage.GetItemAsync<string>("user");
+            roomInput = await localStorage.GetItemAsync<string>("room");
+            StateHasChanged();
+            if (!string.IsNullOrEmpty(usernameInput) && !string.IsNullOrEmpty(roomInput))
+            {
+                await Join();
+            }          
+        }
     }
 
     public async ValueTask DisposeAsync()
@@ -162,32 +168,38 @@
         }
     }
 
+    public async Task GetConnectionId() {
+        connectionId = await hubConnection.InvokeAsync<string>("getConnectionId");
+    }
+
     public async Task Login()
     {   
 
         hubConnection = new HubConnectionBuilder()
-            .WithUrl(NavigationManager.ToAbsoluteUri("/chathub"))
+            .WithUrl(navigationManager.ToAbsoluteUri("/chathub"))
             .Build();
 
         hubConnection.On<string, string>(ChatHub.METHOD_RECEIVE_MESSAGE, (user, message) =>
         {
-            messages.Add(new ChatMessage { 
-                Username = user, 
-                Message = message, 
-                CurrentUser = user == usernameInput, 
-                DateSent = DateTime.Now 
+
+            messages.Add(new ChatMessage
+            {
+                Username = user,
+                Message = message,
+                CurrentUser = user == usernameInput,
+                DateSent = DateTimeOffset.UtcNow.ToOffset(userOffsetTime)
             });
 
             StateHasChanged();
 
             JS.InvokeVoidAsync("scrollToEnd", DivMessagesRef);
 
-            if (user != usernameInput && user != ChatHub.BOT_NAME)
+            if (user != usernameInput)
             {
                 JS.InvokeVoidAsync("setTitleWithoutFocus", "Chatio");
             }
 
-            MessageRef.FocusAsync();
+            TextareaMessageRef.FocusAsync();
 
         });
 
@@ -199,9 +211,8 @@
 
         });
 
-        isAfterDisconnect = false;
-
         await hubConnection.StartAsync();  
+        await GetConnectionId();
 
     }
 
@@ -210,24 +221,19 @@
         if (hubConnection is not null)
         {
             await hubConnection.SendAsync("Disconnect");
-            messages = new();
+            //messages = new();
             users = new();
             isUserLogged = false;
-            isAfterDisconnect = true;
-            await StopChat();
+            //isAfterDisconnect = true;
+            //await StopChat();
             toastService.ShowSuccess("Disconnected...");
         }  
     }
 
-    public async Task Reconnect()
-    {
-        await Login();
-        await Join();
-    }
-
     private async Task Join()
-    {
-        await JoinBtnRef.FocusAsync();
+    {  
+        await BtnJoinRef.FocusAsync();
+
         if (!string.IsNullOrEmpty(usernameInput) && !string.IsNullOrEmpty(roomInput))
         {
 
@@ -237,18 +243,34 @@
                 return;    
             }
 
-            messages = new();
+            var isUsernameTaken = await hubConnection.InvokeAsync<bool>("IsUsernameTaken", roomInput, usernameInput);
 
-            await hubConnection.SendAsync("JoinToRoom", new ChatUser() { User = usernameInput, Room = roomInput.ToLowerInvariant() });
+            if (isUsernameTaken)
+            {
+                toastService.ShowError($"Name {usernameInput} is taken in room {roomInput}");
+            }
+            else
+            {
 
-            isUserLogged = true;
-            messageInput = string.Empty;
+                //messages = new();
 
-            toastService.ShowSuccess($"Joined to the room: {roomInput}");
+                await localStorage.SetItemAsync("user", usernameInput);
+                await localStorage.SetItemAsync("room", roomInput);
+
+                await hubConnection.SendAsync("JoinToRoom", new ChatUser() { User = usernameInput, Room = roomInput.ToLowerInvariant() });
+
+                isUserLogged = true;
+                messageInput = string.Empty;
+
+                toastService.ShowSuccess($"Joined to the room: {roomInput}");
+
+            }
+
         } else
         {
-            toastService.ShowError($"Fill your name & room");
+            toastService.ShowError($"Fill your name & room.");
         }
+
     }
 
     public async Task JoinByEnter(KeyboardEventArgs e)
@@ -259,10 +281,20 @@
         }
     }
 
+    public async Task FocusRoom(KeyboardEventArgs e)
+    {
+        if (e.Code == "Enter" || e.Code == "NumpadEnter")
+        {        
+            await InputRoomRef.FocusAsync();
+        }
+    }
+
     private async Task SendMessage()
     {
-        await SendBtnRef.FocusAsync();
+        await BtnSendRef.FocusAsync();
+
         messageInput = ClearInput(messageInput);
+
         if (!string.IsNullOrEmpty(usernameInput) && !string.IsNullOrEmpty(messageInput))
         {
             await hubConnection.SendAsync("SendMessage", messageInput);
@@ -271,7 +303,8 @@
         {
             toastService.ShowError($"Type message!");
         }
-        await MessageRef.FocusAsync();
+
+        await TextareaMessageRef.FocusAsync();
     }
 
     public async Task SendMessageByEnter(KeyboardEventArgs e)
