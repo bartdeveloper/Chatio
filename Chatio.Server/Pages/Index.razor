@@ -1,15 +1,18 @@
 ﻿@page "/"
 @using Blazored.LocalStorage
-@using Chatio.Components
+@using Chatio.Server.Components
 @using Chatio.Hubs
+@using Chatio.Models
 @using Chatio.Services
 @using Microsoft.AspNetCore.SignalR.Client
-@using Models
+@using Chatio.DataAccess.Models
+@using System.Globalization
 @inject NavigationManager navigationManager
 @inject TimeZoneService timeZoneService
 @inject IJSRuntime JS
 @inject IToastService toastService
 @inject ILocalStorageService localStorage
+@inject IChatService chatService
 @implements IAsyncDisposable
 
 <div>
@@ -100,14 +103,14 @@
 </div>
 
 @code {
-    
+
     ElementReference BtnJoinRef;
     ElementReference BtnSendRef;
     ElementReference TextareaMessageRef;
     ElementReference InputRoomRef;
 
     private HubConnection hubConnection;
-    private List<ChatMessage> messages = new();
+    private List<ChatMessageDTO> messages = new();
     private List<string> users = new();
     private string usernameInput;
     private string roomInput;
@@ -119,6 +122,7 @@
 
     protected override async Task OnInitializedAsync()
     {
+        Thread.CurrentThread.CurrentCulture = new CultureInfo("en-US");
         await Login();
     }
 
@@ -163,10 +167,10 @@
         hubConnection.On<string, string>(ChatHub.METHOD_RECEIVE_MESSAGE, (user, message) =>
         {
 
-            messages.Add(new ChatMessage
+            messages.Add(new ChatMessageDTO
             {
                 Username = user,
-                Message = message,
+                Message = message.FillEmojiInText(),
                 CurrentUser = user == usernameInput,
                 DateSent = DateTimeOffset.UtcNow.ToOffset(userOffsetTime)
             });
@@ -174,11 +178,7 @@
             StateHasChanged();
 
             JS.InvokeVoidAsync("scrollToEndMessages");
-
-            if (user != usernameInput)
-            {
-                JS.InvokeVoidAsync("setTitleWithoutFocus", "Chatio");
-            }
+            JS.InvokeVoidAsync("setTitleWithoutFocus", "Chatio");
 
             TextareaMessageRef.FocusAsync();
 
@@ -202,7 +202,7 @@
         if (hubConnection is not null)
         {
             await hubConnection.SendAsync("Disconnect");
-            //messages = new();
+            messages = new();
             users = new();
             isUserLogged = false;
             toastService.ShowSuccess("Disconnected...");
@@ -231,7 +231,17 @@
             else
             {
 
-                //messages = new();
+                var msgs = chatService.List(roomInput.ToLowerInvariant());
+                foreach(var msg in msgs)
+                {
+                    messages.Add(new ChatMessageDTO()
+                    {
+                        Username = msg.Username,
+                        DateSent = msg.DateSent,
+                        CurrentUser = msg.Username == usernameInput,
+                        Message = msg.Message.FillEmojiInText()
+                    });
+                }
 
                 await localStorage.SetItemAsync("user", usernameInput);
                 await localStorage.SetItemAsync("room", roomInput);
@@ -240,6 +250,10 @@
 
                 isUserLogged = true;
                 messageInput = string.Empty;
+
+                StateHasChanged();
+
+                await JS.InvokeVoidAsync("scrollToEndMessages");
 
                 toastService.ShowSuccess($"Joined to the room: {roomInput}");
 
@@ -277,6 +291,7 @@
         if (!string.IsNullOrEmpty(usernameInput) && !string.IsNullOrEmpty(messageInput))
         {
             await hubConnection.SendAsync("SendMessage", messageInput);
+            await chatService.Add(new ChatMessage() { Username = usernameInput, Room = roomInput.ToLowerInvariant(), Message = messageInput, DateSent = DateTimeOffset.UtcNow.ToOffset(userOffsetTime) });
             messageInput = string.Empty;
         } else
         {

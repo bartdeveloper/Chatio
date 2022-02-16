@@ -12,4 +12,8 @@
     <PackageReference Include="Microsoft.Azure.SignalR" Version="1.4.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\Chatio.DataAccess\Chatio.DataAccess.csproj" />
+  </ItemGroup>
+
 </Project>

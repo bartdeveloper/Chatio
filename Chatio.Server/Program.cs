@@ -1,9 +1,11 @@
 using Blazored.LocalStorage;
 using Blazored.Toast.Services;
+using Chatio.DataAccess.Data;
 using Chatio.Hubs;
 using Chatio.Models;
 using Chatio.Services;
 using Microsoft.AspNetCore.ResponseCompression;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -23,7 +25,10 @@ builder.Services.AddBlazoredLocalStorage();
 
 builder.Services.AddSingleton<IDictionary<string, ChatUser>>(opts => new Dictionary<string, ChatUser>());
 builder.Services.AddScoped<IToastService, ToastService>();
+builder.Services.AddScoped<IChatService, ChatService>();
 builder.Services.AddScoped<TimeZoneService>();
+
+builder.Services.AddDbContext<ChatDbContext>();
 
 var app = builder.Build();
 
@@ -43,5 +48,12 @@ app.UseRouting();
 app.MapBlazorHub();
 app.MapHub<ChatHub>("/chathub");
 app.MapFallbackToPage("/_Host");
+
+var serviceScopeFactory = app.Services.GetRequiredService<IServiceScopeFactory>();
+using (var serviceScope = serviceScopeFactory.CreateScope())
+{
+    var dbContext = serviceScope.ServiceProvider.GetService<ChatDbContext>();
+    dbContext.Database.EnsureCreated();
+}
 
 app.Run();
