@@ -361,3 +361,6 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+/Chatio.Server/ChatDatabase.db
+/Chatio.Server/ChatDatabase.db-shm
+/Chatio.Server/ChatDatabase.db-wal

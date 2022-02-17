@@ -72,16 +72,23 @@
 
                 <div class="container join-form">
                     <div class="row col-lg-4 col-8 padding-top-20">
+
                         <div class="chatio">Chatio 💬</div>
-                        <div class="col-12">
+
+                         <Loader IsHidden="@(!loading)"></Loader>
+
+                        <div class="col-12" hidden="@loading">
                             <input @bind="usernameInput" type="text" class="form-control" @onkeydown="FocusRoom" placeholder="Name" readonly="@isUserLogged"/>
                         </div>
-                        <div class="col-12">
+
+                        <div class="col-12"hidden="@loading">
                             <input @ref=InputRoomRef @bind="roomInput" rows="4" class="form-control" @onkeydown="JoinByEnter" placeholder="Room" />
                         </div>
-                        <div class="col-12 text-center padding-top-5">
+
+                        <div class="col-12 text-center padding-top-5" hidden="@loading">
                             <button type="button" @ref=BtnJoinRef @onclick="Join" hidden="@(!isConnected)" class="col-md-12 col-sm-12 col-12 btn btn-warning">Join <span class="oi oi-account-login"></span></button>
                         </div>
+
                     </div>
                 </div>
 
@@ -118,11 +125,11 @@
     private string connectionId;
     private bool isUserLogged = false;
     private bool isConnected => hubConnection?.State == HubConnectionState.Connected;  
-    private TimeSpan userOffsetTime;
+    private bool loading = false;
+    private TimeSpan userOffsetTime; 
 
     protected override async Task OnInitializedAsync()
     {
-        Thread.CurrentThread.CurrentCulture = new CultureInfo("en-US");
         await Login();
     }
 
@@ -210,7 +217,10 @@
     }
 
     private async Task Join()
-    {  
+    {
+
+        loading = true;
+        StateHasChanged();
         await BtnJoinRef.FocusAsync();
 
         if (!string.IsNullOrEmpty(usernameInput) && !string.IsNullOrEmpty(roomInput))
@@ -219,6 +229,7 @@
             if(usernameInput.Equals(ChatHub.BOT_NAME, StringComparison.InvariantCultureIgnoreCase))
             {
                 toastService.ShowError($"Restricted name! ({ChatHub.BOT_NAME})");
+                loading = false;
                 return;    
             }
 
@@ -227,12 +238,16 @@
             if (isUsernameTaken)
             {
                 toastService.ShowError($"Name {usernameInput} is taken in room {roomInput}");
+                loading = false;
             }
             else
             {
 
-                var msgs = chatService.List(roomInput.ToLowerInvariant());
-                foreach(var msg in msgs)
+                await Task.Delay(1000);
+
+                var messagesFromDatabase = chatService.List(roomInput.ToLowerInvariant());
+
+                foreach(var msg in messagesFromDatabase)
                 {
                     messages.Add(new ChatMessageDTO()
                     {
@@ -250,6 +265,7 @@
 
                 isUserLogged = true;
                 messageInput = string.Empty;
+                loading = false;
 
                 StateHasChanged();
 
@@ -262,6 +278,7 @@
         } else
         {
             toastService.ShowError($"Fill your name & room.");
+            loading = false;
         }
 
     }

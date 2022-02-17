@@ -10,9 +10,7 @@
 # Note: This is only used by command line
 ###############################################################################
 #*.cs     diff=csharp
-*.db
-*.db-shm
-*.db-wal
+
 ###############################################################################
 # Set the merge driver for project and solution files
 #

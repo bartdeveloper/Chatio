@@ -1,23 +1,36 @@
-﻿namespace Chatio.Services
+﻿using System.Text;
+
+namespace Chatio.Services
 {
     public static class EmojiService
     {
+        
+        static Dictionary<string, string> emojiMap = new Dictionary<string, string>(){
+            {":cat", "😺"},
+            {":ufo", "👽"},
+            {":poo", "💩"},
+            {":ok", "👍"},
+            {":)", "😊"},
+            {";)", "😉"},
+            {":P", "😜"}, {":p", "😜"}, {";p", "😜"},
+            {":D", "😃"}, {":d", "😃"},
+            {"xD", "🤣"}, {"xd", "🤣"}, {"Xd", "🤣"},
+            {":>", "😏"}, {";>", "😏"},
+            {":]", "😎"}, {";]", "😎"},
+            {":(", "😒"}, {";(", "😒"},
+            {"<3", "😍"} };
+
         public static string FillEmojiInText(this string text)
         {
-            return text
-                    .Replace(":cat", "😺")
-                    .Replace(":ufo", "👽")
-                    .Replace(":poo", "💩")
-                    .Replace(":ok", "👍")
-                    .Replace(":)", "😊")
-                    .Replace(";)", "😉")
-                    .Replace(":P", "😜").Replace(":p", "😜").Replace(";p", "😜")
-                    .Replace(":D", "😃").Replace(":d", "😃")
-                    .Replace("xD", "🤣").Replace("xd", "🤣").Replace("Xd", "🤣")
-                    .Replace(":>", "😏").Replace(";>", "😏")
-                    .Replace(":]", "😎").Replace(";]", "😎")
-                    .Replace(":(", "😒").Replace(";(", "😒")
-                    .Replace("<3", "😍");                 
+
+            var stringBuilder = new StringBuilder(text);
+
+            foreach (var emoji in emojiMap)
+            {
+                stringBuilder.Replace(emoji.Key, emoji.Value);
+            }
+
+            return stringBuilder.ToString();                 
         }
     }
 }
