@@ -1,0 +1,19 @@
+﻿<div class="col-xxl-2 col-xl-2 col-lg-2 col-md-12 col-sm-12 col-12 users">
+    <strong>Users <small>(@users.Count)</small></strong>
+    <ul>
+        @foreach (var user in users)
+        {
+            <li class="user @(user == username ? "you" : "")">@user</li>
+        }
+    </ul>
+</div>
+
+@code {
+
+    [Parameter]
+    public List<string> users { get; set; }
+
+    [Parameter]
+    public string username { get; set; }
+
+}

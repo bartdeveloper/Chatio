@@ -5,7 +5,7 @@ namespace Chatio.Services
     public static class EmojiService
     {
         
-        static Dictionary<string, string> emojiMap = new Dictionary<string, string>(){
+        public static Dictionary<string, string> emojiMap = new Dictionary<string, string>(){
             {":cat", "😺"},
             {":ufo", "👽"},
             {":poo", "💩"},
@@ -18,7 +18,9 @@ namespace Chatio.Services
             {":>", "😏"}, {";>", "😏"},
             {":]", "😎"}, {";]", "😎"},
             {":(", "😒"}, {";(", "😒"},
-            {"<3", "😍"} };
+            {"<3", "😍"},
+            {":*", "😘" }
+        };
 
         public static string FillEmojiInText(this string text)
         {

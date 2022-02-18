@@ -34,16 +34,7 @@
                     <button type="button" @onclick="Logout" hidden="@(!isConnected)" class="btn btn-secondary"><span class="oi oi-account-logout"></span> Disconnect</button>
                 </div>
 
-                <!-- USERS -->
-                <div class="col-xxl-2 col-xl-2 col-lg-2 col-md-12 col-sm-12 col-12 users">
-                    <strong>Users <small>(@users.Count)</small></strong>
-                    <ul>
-                        @foreach (var user in users)
-                        {
-                            <li class="user @(user == usernameInput ? "you" : "")">@user</li>
-                        }
-                    </ul>
-                </div>
+                <Users users="@users" username="@usernameInput"></Users>
 
                 <!-- SEND MESSAGE FORM -->
                 <div class="col-xxl-10 col-xl-10 col-lg-10 col-md-12 col-sm-12 col-12">
@@ -61,6 +52,8 @@
 
         </div>
 
+        <Messages messages=messages></Messages>
+
     }
 
     <!-- JOIN FORM -->
@@ -75,7 +68,7 @@
 
                         <div class="chatio">Chatio 💬</div>
 
-                         <Loader IsHidden="@(!loading)"></Loader>
+                        <Loader IsHidden="@(!loading)"></Loader>
 
                         <div class="col-12" hidden="@loading">
                             <input @bind="usernameInput" type="text" class="form-control" @onkeydown="FocusRoom" placeholder="Name" readonly="@isUserLogged"/>
@@ -96,14 +89,6 @@
         </div>
 
         <Footer></Footer>
-
-    }
-
-    <!-- MESSAGES -->
-    @if (isUserLogged)
-    {
-
-        <Messages messages=messages></Messages>
 
     }
 
