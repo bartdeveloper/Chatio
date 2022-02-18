@@ -1,6 +1,6 @@
 ﻿@using Chatio.Hubs
 @using Chatio.Models
-@using System.Globalization
+@using Chatio.Server.Services
 
 @if (chatMessage.Username.Equals(ChatHub.BOT_NAME))
 {
@@ -26,7 +26,7 @@ else
                 <li class="list-group-item message-content">@chatMessage.Message</li>
             </ul>
             <div class="card-footer">
-                <span class="small">@chatMessage.DateSent.ToString("HH:mm | dd MMMM yyy", new CultureInfo("pl-PL"))</span>
+                <span class="small">@chatMessage.DateSent.ToPolandFormat()</span>
             </div>
         </div>
     </div>
