@@ -1,0 +1,18 @@
+﻿@using Chatio.Services
+
+<div class="row padding-bottom-10" hidden="@hideEmojis">
+    @foreach(var emoji in EmojiService.emojiMap)
+    {
+        <div class="col-2">@emoji.Key @emoji.Value</div>    
+    }
+</div>
+
+<div class="col-xxl-6 col-xl-6 col-lg-6 col-md-6 col-sm-6 col-6">
+    <button type="button" @onclick=" () => hideEmojis = !hideEmojis" class="btn btn-secondary">Emojis 😊</button>
+</div>
+
+@code {
+
+    private bool hideEmojis = true;
+
+}
