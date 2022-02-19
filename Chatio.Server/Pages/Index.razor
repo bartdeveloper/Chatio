@@ -24,17 +24,13 @@
 
             <div class="header row">
 
-                <!-- ROOM NAME -->
-                <div class="col-xxl-8 col-xl-8 col-lg-8 col-md-8 col-sm-8 col-8">
-                    <h1><i>#@roomInput</i></h1>
-                </div>
+                <Emojis></Emojis>
 
-                <!-- DISCONNECT BUTTON -->
-                <div class="col-xxl-4 col-xl-4 col-lg-4 col-md-4 col-sm-4 col-4 text-align-right">
-                    <button type="button" @onclick="Logout" hidden="@(!isConnected)" class="btn btn-secondary"><span class="oi oi-account-logout"></span> Disconnect</button>
-                </div>
+                <DisconnectButton IsConnected="@isConnected" Logout="Logout"></DisconnectButton>
 
-                <Users users="@users" username="@usernameInput"></Users>
+                <RoomInfo Name="@roomInput"></RoomInfo>
+
+                <Users RoomUsers="@users" Username="@usernameInput"></Users>
 
                 <!-- SEND MESSAGE FORM -->
                 <div class="col-xxl-10 col-xl-10 col-lg-10 col-md-12 col-sm-12 col-12">

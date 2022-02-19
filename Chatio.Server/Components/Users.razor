@@ -1,9 +1,9 @@
 ﻿<div class="col-xxl-2 col-xl-2 col-lg-2 col-md-12 col-sm-12 col-12 users">
-    <strong>Users <small>(@users.Count)</small></strong>
+    <strong>Users <small>(@RoomUsers.Count)</small></strong>
     <ul>
-        @foreach (var user in users)
+        @foreach (var user in RoomUsers)
         {
-            <li class="user @(user == username ? "you" : "")">@user</li>
+            <li class="user @(user == Username ? "you" : "")">@user</li>
         }
     </ul>
 </div>
@@ -11,9 +11,9 @@
 @code {
 
     [Parameter]
-    public List<string> users { get; set; }
+    public List<string> RoomUsers { get; set; }
 
     [Parameter]
-    public string username { get; set; }
+    public string Username { get; set; }
 
 }

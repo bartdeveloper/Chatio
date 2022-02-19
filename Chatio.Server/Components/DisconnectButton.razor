@@ -1,0 +1,13 @@
+﻿<div class="col-xxl-6 col-xl-6 col-lg-6 col-md-6 col-sm-6 col-6 text-align-right">
+    <button type="button" @onclick="Logout" hidden="@(!IsConnected)" class="btn btn-secondary"><span class="oi oi-account-logout"></span> Disconnect</button>
+</div>
+
+@code {
+
+    [Parameter]
+    public bool IsConnected { get; set; }
+
+    [Parameter] 
+    public EventCallback Logout { get; set; }
+
+}
